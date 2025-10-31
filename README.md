@@ -1,4 +1,4 @@
-# Local-OCR_-Chakshu
+# Local-OCR-Chakshu
 An hybrid OCR that works absolutely locally with zero cost and no GPUs.
 # Hybrid OCR 🔍
 
