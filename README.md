@@ -30,6 +30,31 @@ Multi-strategy correction (rules/LLM/hybrid)
 Production-grade error handling
 Structured output formats
 
+
+Why Hybrid OCR?
+Feature
+Hybrid OCR
+Cloud OCR Services
+Privacy
+✅ 100% local
+❌ Data uploaded
+Cost
+✅ Free forever
+❌ $0.0015-0.01/page
+Internet
+✅ Works offline
+❌ Requires connection
+Speed
+✅ 3-5 sec/page
+⚠️ 2-10 sec + network
+GPU
+✅ CPU only
+⚠️ Their servers
+Privacy
+✅ Your documents stay yours
+❌ Terms of service apply
+Like Adobe PDF viewer should be - instant, local, private.
+
 Quick Start
 
 \`\`\`bash
