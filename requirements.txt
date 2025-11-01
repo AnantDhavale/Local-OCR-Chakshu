@@ -1,0 +1,9 @@
+# Core dependencies - minimal for local operation
+pytesseract>=0.3.10
+Pillow>=9.0.0
+
+# Optional: For LLM-based correction (still runs locally on CPU)
+# Uncomment if you want the advanced corrector:
+# transformers>=4.30.0
+# torch>=2.0.0
+# sentencepiece>=0.1.99
