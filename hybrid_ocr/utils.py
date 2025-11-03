@@ -1,6 +1,6 @@
-
+"""
 Helper functions for the Chakshu OCR system.
-
+"""
 
 import logging
 import time
