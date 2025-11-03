@@ -3,6 +3,7 @@ from PIL import Image
 import sys
 from pathlib import Path
 import io
+import os
 
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -13,6 +14,49 @@ st.set_page_config(
     page_icon="👁️",
     layout="wide"
 )
+
+# Password Protection
+def check_password():
+    """Returns `True` if the user has entered the correct password."""
+    
+    def password_entered():
+        """Checks whether a password entered by the user is correct."""
+        if st.session_state["password"] == os.environ.get("APP_PASSWORD", ""):
+            st.session_state["password_correct"] = True
+            del st.session_state["password"]  # Don't store password
+        else:
+            st.session_state["password_correct"] = False
+
+    # First run, show password input
+    if "password_correct" not in st.session_state:
+        st.markdown("### 🔒 Authentication Required")
+        st.text_input(
+            "Password", 
+            type="password", 
+            on_change=password_entered, 
+            key="password"
+        )
+        st.caption("Enter password to access the OCR system")
+        return False
+    
+    # Password incorrect, show input + error
+    elif not st.session_state["password_correct"]:
+        st.markdown("### 🔒 Authentication Required")
+        st.text_input(
+            "Password", 
+            type="password", 
+            on_change=password_entered, 
+            key="password"
+        )
+        st.error("❌ Incorrect password")
+        return False
+    
+    # Password correct
+    else:
+        return True
+
+if not check_password():
+    st.stop()
 
 st.title("👁️ Chakshu OCR - Hybrid OCR System")
 st.markdown("""
