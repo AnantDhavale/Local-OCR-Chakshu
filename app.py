@@ -21,8 +21,8 @@ Upload an image to extract text with automatic correction.
 """)
 
 @st.cache_resource
-def get_ocr_engine(strategy):
-    return HybridOCR(correction_strategy=strategy, preprocess=True)
+def get_ocr_engine(strategy, preset):
+    return HybridOCR(correction_strategy=strategy, preprocess=True, preprocess_preset=preset)
 
 with st.sidebar:
     st.header("Settings")
@@ -31,7 +31,7 @@ with st.sidebar:
         "Correction Strategy",
         options=["rule_based", "hybrid"],
         index=0,
-        help="Rule-based is fast and instant. Hybrid uses LLM for better quality (requires additional packages)."
+        help="✨ IMPROVED: Now with dictionary-based spell checking and character confusion patterns!"
     )
     
     language = st.selectbox(
@@ -41,7 +41,12 @@ with st.sidebar:
         help="Tesseract language pack"
     )
     
-    preprocess = st.checkbox("Enable Preprocessing", value=True, help="Enhance image quality before OCR")
+    preset = st.selectbox(
+        "Preprocessing Preset",
+        options=["default", "document", "photo", "low_quality", "newspaper", "minimal"],
+        index=0,
+        help="Choose preset based on your image type: document (clean text), photo (text in photos), low_quality (poor scans), newspaper (old prints), minimal (no preprocessing)"
+    )
     
     confidence_threshold = st.slider(
         "Confidence Threshold",
@@ -77,7 +82,7 @@ with col1:
         if st.button("Extract Text", type="primary", use_container_width=True):
             with st.spinner("Processing image..."):
                 try:
-                    ocr = get_ocr_engine(strategy)
+                    ocr = get_ocr_engine(strategy, preset)
                     
                     result = ocr.process(
                         image,
@@ -156,7 +161,37 @@ with st.expander("Sample Images & Tips"):
     """)
 
 st.markdown("---")
+
+with st.expander("🎉 What's New in This Version"):
+    st.markdown("""
+    **Major Improvements:**
+    
+    1. **Dictionary-Based Spell Checking** ✨
+       - Automatically corrects misspelled words using dictionary
+       - Only corrects low-confidence words to avoid false fixes
+    
+    2. **Character Confusion Patterns** 🔤
+       - Fixes common OCR mistakes (rn→m, vv→w, 0→O, 1→l/I)
+       - Number/letter confusion detection
+    
+    3. **5x Faster Deskew** ⚡
+       - Improved from 5 OCR calls to just 1
+       - Uses single OSD detection for rotation
+    
+    4. **Adaptive Binarization** 🎨
+       - Otsu's method instead of fixed threshold
+       - Automatically adapts to image lighting
+    
+    5. **Preprocessing Presets** 🎯
+       - Optimized presets for different document types
+       - Document, photo, low-quality, newspaper options
+    
+    6. **Confidence-Based Filtering** 🎲
+       - Only corrects words below confidence threshold
+       - Preserves high-confidence text untouched
+    """)
+
 st.markdown(
-    "<div style='text-align: center; color: #666;'>Chakshu OCR v0.1.0 - MIT License</div>",
+    "<div style='text-align: center; color: #666;'>Chakshu OCR v0.2.0 - MIT License</div>",
     unsafe_allow_html=True
 )

@@ -90,16 +90,70 @@ class OCRResult:
 class ImagePreprocessor:
     """
     Pre-processes images to improve OCR accuracy
+    Now with presets for different document types!
     """
     
-    def __init__(self, config: Optional[Dict] = None):
-        self.config = config or {
+    # Preset configurations for different document types
+    PRESETS = {
+        'default': {
             'enhance_contrast': True,
             'denoise': True,
             'sharpen': False,
             'binarize': False,
             'deskew': True
+        },
+        'document': {
+            'enhance_contrast': True,
+            'denoise': False,  # Clean documents don't need denoising
+            'sharpen': True,   # Sharpen text edges
+            'binarize': True,  # Black & white for clean text
+            'deskew': True
+        },
+        'photo': {
+            'enhance_contrast': True,
+            'denoise': True,   # Photos often have noise
+            'sharpen': False,  # Don't sharpen photos
+            'binarize': False, # Keep colors for better recognition
+            'deskew': True
+        },
+        'low_quality': {
+            'enhance_contrast': True,
+            'denoise': True,   # Remove noise from poor scans
+            'sharpen': True,   # Sharpen blurry text
+            'binarize': True,  # Binarize to remove artifacts
+            'deskew': True
+        },
+        'newspaper': {
+            'enhance_contrast': True,
+            'denoise': True,   # Old newspapers are noisy
+            'sharpen': False,
+            'binarize': True,  # Convert to B&W for better text
+            'deskew': True
+        },
+        'minimal': {
+            'enhance_contrast': False,
+            'denoise': False,
+            'sharpen': False,
+            'binarize': False,
+            'deskew': False  # No preprocessing - trust Tesseract
         }
+    }
+    
+    def __init__(self, config: Optional[Dict] = None, preset: str = 'default'):
+        """
+        Initialize preprocessor
+        
+        Args:
+            config: Custom configuration dict (overrides preset)
+            preset: Preset name ('default', 'document', 'photo', 'low_quality', 'newspaper', 'minimal')
+        """
+        if config:
+            self.config = config
+        elif preset in self.PRESETS:
+            self.config = self.PRESETS[preset].copy()
+        else:
+            logger.warning(f"Unknown preset '{preset}', using 'default'")
+            self.config = self.PRESETS['default'].copy()
     
     def preprocess(self, image: Image.Image) -> Image.Image:
         """
@@ -129,12 +183,9 @@ class ImagePreprocessor:
             if self.config.get('sharpen'):
                 image = image.filter(ImageFilter.SHARPEN)
             
-            # Binarization (convert to black and white)
+            # Binarization (convert to black and white) - IMPROVED with adaptive thresholding
             if self.config.get('binarize'):
-                image = image.convert('L')  # Grayscale
-                # Apply threshold
-                threshold = 128
-                image = image.point(lambda x: 255 if x > threshold else 0, '1')
+                image = self._adaptive_binarize(image)
             
             # Deskew (rotate to fix tilted scans)
             if self.config.get('deskew'):
@@ -146,31 +197,83 @@ class ImagePreprocessor:
             logger.error(f"Image preprocessing failed: {e}")
             raise ImageProcessingError(f"Failed to preprocess image: {e}")
     
-    def _deskew(self, image: Image.Image) -> Image.Image:
+    def _adaptive_binarize(self, image: Image.Image) -> Image.Image:
         """
-        Detect and correct image skew
-        Uses heuristic-based approach for speed
+        Apply adaptive binarization using Otsu's method
+        Much better than fixed threshold - adapts to image lighting
         """
         try:
-            # Simple deskew: try small rotations and pick best
-            # In production, you might use pytesseract.image_to_osd() for better accuracy
-            angles = [-2, -1, 0, 1, 2]
-            best_image = image
-            best_conf = 0
+            # Convert to grayscale
+            if image.mode != 'L':
+                image = image.convert('L')
             
-            for angle in angles:
-                rotated = image.rotate(angle, expand=True, fillcolor='white')
-                # Quick confidence check on small sample
-                try:
-                    osd = pytesseract.image_to_osd(rotated, output_type=pytesseract.Output.DICT)
-                    conf = osd.get('orientation_conf', 0)
-                    if conf > best_conf:
-                        best_conf = conf
-                        best_image = rotated
-                except:
+            # Convert to numpy array for processing
+            img_array = np.array(image)
+            
+            # Calculate histogram
+            histogram, _ = np.histogram(img_array.flatten(), bins=256, range=(0, 256))
+            
+            # Calculate optimal threshold using Otsu's method
+            total_pixels = img_array.size
+            current_max = 0
+            threshold = 127
+            
+            sum_total = np.sum(np.arange(256) * histogram)
+            sum_background = 0
+            weight_background = 0
+            
+            for t in range(256):
+                weight_background += histogram[t]
+                if weight_background == 0:
                     continue
+                    
+                weight_foreground = total_pixels - weight_background
+                if weight_foreground == 0:
+                    break
+                
+                sum_background += t * histogram[t]
+                
+                mean_background = sum_background / weight_background
+                mean_foreground = (sum_total - sum_background) / weight_foreground
+                
+                # Calculate between-class variance
+                variance = weight_background * weight_foreground * (mean_background - mean_foreground) ** 2
+                
+                if variance > current_max:
+                    current_max = variance
+                    threshold = t
             
-            return best_image
+            # Apply threshold
+            img_array = np.where(img_array > threshold, 255, 0).astype(np.uint8)
+            
+            # Convert back to PIL Image
+            return Image.fromarray(img_array, mode='L')
+            
+        except Exception as e:
+            logger.warning(f"Adaptive binarization failed, using simple threshold: {e}")
+            # Fallback to simple threshold
+            if image.mode != 'L':
+                image = image.convert('L')
+            return image.point(lambda x: 255 if x > 128 else 0, 'L')
+    
+    def _deskew(self, image: Image.Image) -> Image.Image:
+        """
+        Detect and correct image skew - IMPROVED VERSION
+        Uses single OSD call for 5x performance improvement
+        """
+        try:
+            # Use OSD (Orientation and Script Detection) once to get rotation angle
+            osd = pytesseract.image_to_osd(image, output_type=pytesseract.Output.DICT)
+            rotation_angle = float(osd.get('rotate', 0))
+            
+            # Only rotate if angle is significant
+            if abs(rotation_angle) > 0.5:
+                # Rotate image by detected angle
+                rotated = image.rotate(rotation_angle, expand=True, fillcolor='white')
+                logger.debug(f"Rotated image by {rotation_angle} degrees")
+                return rotated
+            
+            return image
             
         except Exception as e:
             logger.warning(f"Deskew failed, using original image: {e}")
@@ -196,6 +299,7 @@ class HybridOCR:
         correction_strategy: Union[str, CorrectionStrategy] = CorrectionStrategy.RULE_BASED,
         language: str = 'eng',
         preprocess: bool = True,
+        preprocess_preset: str = 'default',
         tesseract_config: Optional[str] = None,
         cache_dir: Optional[str] = None,
         log_level: str = 'INFO'
@@ -205,11 +309,18 @@ class HybridOCR:
         
         Args:
             correction_strategy: Strategy for text correction
-                - 'rule_based': Fast, no dependencies
+                - 'rule_based': Fast, dictionary + pattern-based
                 - 'llm': Better quality, uses small local model
                 - 'hybrid': Combines both approaches
             language: Tesseract language code (e.g., 'eng', 'spa', 'fra')
             preprocess: Enable image preprocessing
+            preprocess_preset: Preprocessing preset to use:
+                - 'default': Balanced for general use
+                - 'document': Optimized for clean documents
+                - 'photo': Optimized for photos with text
+                - 'low_quality': For poor quality scans
+                - 'newspaper': For old newspapers
+                - 'minimal': No preprocessing
             tesseract_config: Custom Tesseract configuration string
             cache_dir: Directory for caching models/results
             log_level: Logging level
@@ -226,8 +337,8 @@ class HybridOCR:
         self.tesseract_config = tesseract_config or '--oem 1 --psm 3'
         self.cache_dir = Path(cache_dir) if cache_dir else None
         
-        # Initialize components
-        self.preprocessor = ImagePreprocessor() if preprocess else None
+        # Initialize components with preset support
+        self.preprocessor = ImagePreprocessor(preset=preprocess_preset) if preprocess else None
         
         # Initialize corrector
         if isinstance(correction_strategy, str):
