@@ -202,26 +202,28 @@ class RuleBasedCorrector(BaseCorrector):
         if word_lower in self.dictionary:
             return word
         
-        # Try character confusion fixes
-        fixed_word = self._try_char_confusion_fix(word_lower)
-        if fixed_word and fixed_word in self.dictionary:
-            # Preserve original case
-            if word.isupper():
-                return fixed_word.upper()
-            elif word[0].isupper():
-                return fixed_word.capitalize()
-            return fixed_word
+        # Only try character confusion fixes for VERY low confidence (<50)
+        if confidence < 50:
+            fixed_word = self._try_char_confusion_fix(word_lower)
+            if fixed_word and fixed_word in self.dictionary:
+                # Preserve original case
+                if word.isupper():
+                    return fixed_word.upper()
+                elif word[0].isupper():
+                    return fixed_word.capitalize()
+                return fixed_word
         
-        # Find close matches in dictionary
-        matches = get_close_matches(word_lower, self.dictionary, n=1, cutoff=0.8)
-        if matches:
-            match = matches[0]
-            # Preserve original case
-            if word.isupper():
-                return match.upper()
-            elif word[0].isupper():
-                return match.capitalize()
-            return match
+        # Find close matches in dictionary (only for low confidence)
+        if confidence < 60:
+            matches = get_close_matches(word_lower, self.dictionary, n=1, cutoff=0.85)
+            if matches:
+                match = matches[0]
+                # Preserve original case
+                if word.isupper():
+                    return match.upper()
+                elif word[0].isupper():
+                    return match.capitalize()
+                return match
         
         return word
     
@@ -255,13 +257,13 @@ class RuleBasedCorrector(BaseCorrector):
         # Word-level spell checking with confidence filtering
         words = corrected.split()
         
-        # If no confidences provided, use default threshold
+        # If no confidences provided, assume high confidence (don't over-correct)
         if not confidences:
-            confidences = [50.0] * len(words)  # Assume medium confidence
+            confidences = [100.0] * len(words)  # Assume high confidence - only correct obvious errors
         
         # Ensure confidences list matches words
         if len(confidences) < len(words):
-            confidences.extend([50.0] * (len(words) - len(confidences)))
+            confidences.extend([100.0] * (len(words) - len(confidences)))
         
         corrected_words = []
         for word, conf in zip(words, confidences):
