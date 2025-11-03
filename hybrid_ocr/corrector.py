@@ -5,6 +5,14 @@ All run locally - no external API calls
 
 from typing import List, Dict
 import re
+from enum import Enum
+
+
+class CorrectionStrategy(Enum):
+    """Available correction strategies"""
+    RULE_BASED = "rule_based"
+    LLM = "llm"
+    HYBRID = "hybrid"
 
 
 class BaseCorrector:
@@ -128,3 +136,24 @@ class HybridCorrector(BaseCorrector):
             text = self.llm.correct(text, confidences)
         
         return text
+
+
+def get_corrector(strategy: CorrectionStrategy, language: str = "en") -> BaseCorrector:
+    """
+    Factory function to get the appropriate corrector
+    
+    Args:
+        strategy: Correction strategy to use
+        language: Language code for correction
+        
+    Returns:
+        Corrector instance
+    """
+    if strategy == CorrectionStrategy.RULE_BASED:
+        return RuleBasedCorrector(language=language)
+    elif strategy == CorrectionStrategy.LLM:
+        return LLMCorrector()
+    elif strategy == CorrectionStrategy.HYBRID:
+        return HybridCorrector()
+    else:
+        raise ValueError(f"Unknown correction strategy: {strategy}")
