@@ -149,7 +149,7 @@ class RuleBasedCorrector(BaseCorrector):
                 
                 # Numbers with trailing letters
                 r'(\d+)l\b': r'\1',  # 1l -> 1
-                r'(\d+)O\b': r'\10',  # 10O -> 100
+                r'(\d+)O\b': r'\g<1>0',  # 10O -> 100 (use \g<1> to avoid \10 backreference error)
                 r'\bO(\d+)': r'0\1',  # O5 -> 05
                 
                 # Multiple spaces
