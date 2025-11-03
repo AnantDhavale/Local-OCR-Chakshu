@@ -21,8 +21,8 @@ Upload an image to extract text with automatic correction.
 """)
 
 @st.cache_resource
-def get_ocr_engine(strategy, preset):
-    return HybridOCR(correction_strategy=strategy, preprocess=True, preprocess_preset=preset)
+def get_ocr_engine(strategy, preset, language):
+    return HybridOCR(correction_strategy=strategy, preprocess=True, preprocess_preset=preset, language=language)
 
 with st.sidebar:
     st.header("Settings")
@@ -82,7 +82,7 @@ with col1:
         if st.button("Extract Text", type="primary", use_container_width=True):
             with st.spinner("Processing image..."):
                 try:
-                    ocr = get_ocr_engine(strategy, preset)
+                    ocr = get_ocr_engine(strategy, preset, language)
                     
                     result = ocr.process(
                         image,

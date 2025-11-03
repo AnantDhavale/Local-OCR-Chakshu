@@ -40,7 +40,14 @@ class RuleBasedCorrector(BaseCorrector):
     """
     
     def __init__(self, language: str = "en", confidence_threshold: float = 70.0):
-        self.language = language
+        # Normalize language code (eng -> en, spa -> es, etc.)
+        lang_map = {
+            'eng': 'en',
+            'spa': 'es',
+            'fra': 'fr',
+            'deu': 'de',
+        }
+        self.language = lang_map.get(language, language[:2] if len(language) > 2 else language)
         self.confidence_threshold = confidence_threshold
         self.dictionary = self._load_dictionary()
         self.char_confusion = self._load_char_confusion()
@@ -48,7 +55,15 @@ class RuleBasedCorrector(BaseCorrector):
     
     def _load_dictionary(self) -> Set[str]:
         """Load dictionary from file"""
-        dict_path = Path(__file__).parent.parent / "dictionaries" / f"{self.language}_common.txt"
+        # Map Tesseract language codes to dictionary file names
+        lang_map = {
+            'eng': 'en',
+            'spa': 'es',
+            'fra': 'fr',
+            'deu': 'de',
+        }
+        dict_lang = lang_map.get(self.language, self.language[:2])  # Default to first 2 chars
+        dict_path = Path(__file__).parent.parent / "dictionaries" / f"{dict_lang}_common.txt"
         
         dictionary = set()
         if dict_path.exists():
@@ -344,9 +359,10 @@ class HybridCorrector(BaseCorrector):
     - LLM for low-confidence sections only
     """
     
-    def __init__(self, confidence_threshold: float = 70.0):
+    def __init__(self, confidence_threshold: float = 70.0, language: str = "en"):
         self.confidence_threshold = confidence_threshold
-        self.rules = RuleBasedCorrector(confidence_threshold=confidence_threshold)
+        self.language = language
+        self.rules = RuleBasedCorrector(language=language, confidence_threshold=confidence_threshold)
         self.llm = None  # Lazy load
     
     def _ensure_llm(self):
@@ -406,6 +422,6 @@ def get_corrector(strategy: CorrectionStrategy, language: str = "en") -> BaseCor
     elif strategy == CorrectionStrategy.LLM:
         return LLMCorrector()
     elif strategy == CorrectionStrategy.HYBRID:
-        return HybridCorrector()
+        return HybridCorrector(language=language)
     else:
         raise ValueError(f"Unknown correction strategy: {strategy}")
