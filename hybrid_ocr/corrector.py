@@ -241,6 +241,7 @@ class RuleBasedCorrector(BaseCorrector):
     def correct(self, text: str, confidences: List[float] = None) -> str:
         """
         Apply rule-based corrections with confidence filtering
+        Preserves line breaks for diagram layouts
         
         Args:
             text: Text to correct
@@ -249,6 +250,25 @@ class RuleBasedCorrector(BaseCorrector):
         Returns:
             Corrected text
         """
+        # Preserve line breaks for diagrams
+        has_line_breaks = '\n' in text
+        
+        if has_line_breaks:
+            # Process each line separately to preserve layout
+            lines = text.split('\n')
+            corrected_lines = []
+            
+            for line in lines:
+                corrected_line = self._correct_line(line, confidences)
+                corrected_lines.append(corrected_line)
+            
+            return '\n'.join(corrected_lines)
+        else:
+            # Single line or concatenated text
+            return self._correct_line(text, confidences)
+    
+    def _correct_line(self, text: str, confidences: List[float] = None) -> str:
+        """Apply corrections to a single line of text"""
         # Apply pattern-based rules first
         corrected = text
         for pattern, replacement in self.rules.items():

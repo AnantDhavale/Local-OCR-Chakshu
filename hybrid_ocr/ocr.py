@@ -435,7 +435,8 @@ class HybridOCR:
             
             # Parse into structured format
             words = self._parse_words(ocr_data)
-            raw_text = ' '.join(w.text for w in words)
+            # Reconstruct text preserving layout for diagrams
+            raw_text = self._reconstruct_text_with_layout(words, self.preprocess_preset)
             
             # Apply correction
             corrected_text = self.corrector.correct(
@@ -536,6 +537,51 @@ class HybridOCR:
                     filtered[key].append(ocr_data[key][i])
         
         return filtered
+    
+    def _reconstruct_text_with_layout(self, words: List[OCRWord], preset: str = 'default') -> str:
+        """
+        Reconstruct text while preserving spatial layout
+        Groups words by vertical position (lines), preserves left-to-right order
+        Especially important for diagrams and structured layouts
+        """
+        if not words:
+            return ""
+        
+        # For diagrams, preserve layout by grouping words by Y position (line)
+        if preset == 'diagram':
+            # Group words by line (similar Y coordinate)
+            lines = {}
+            tolerance = 15  # pixels of tolerance for same line
+            
+            for word in words:
+                y = word.bbox[1]  # Top Y coordinate
+                
+                # Find which line this word belongs to
+                line_key = None
+                for existing_y in lines.keys():
+                    if abs(y - existing_y) < tolerance:
+                        line_key = existing_y
+                        break
+                
+                if line_key is None:
+                    line_key = y
+                
+                if line_key not in lines:
+                    lines[line_key] = []
+                lines[line_key].append(word)
+            
+            # Sort lines by Y position (top to bottom)
+            text_lines = []
+            for y in sorted(lines.keys()):
+                # Sort words in line by X position (left to right)
+                line_words = sorted(lines[y], key=lambda w: w.bbox[0])
+                line_text = ' '.join(w.text for w in line_words)
+                text_lines.append(line_text)
+            
+            return '\n'.join(text_lines)
+        else:
+            # Default: just join with spaces
+            return ' '.join(w.text for w in words)
     
     def _count_changes(self, original: str, corrected: str) -> int:
         """Count number of character changes made during correction"""
