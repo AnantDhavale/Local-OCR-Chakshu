@@ -141,6 +141,8 @@ with col1:
         on_change=clear_result
     )
     
+    image = None  # Initialize before try block
+    
     if uploaded_file is not None:
         try:
             # Read uploaded file as bytes and convert to PIL Image
@@ -150,6 +152,7 @@ with col1:
             file_size_mb = uploaded_file.size / (1024 * 1024)
             if file_size_mb > 10:
                 st.error(f"⚠️ Image too large ({file_size_mb:.1f}MB). Maximum is 10MB.")
+                image = None
             else:
                 # Show image and metadata
                 col_img_info, col_img_meta = st.columns([3, 1])
