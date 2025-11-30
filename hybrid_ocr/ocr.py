@@ -144,21 +144,22 @@ class ImagePreprocessor:
             'tesseract_psm': 6
         },
         'manuscript': {
-            'enhance_contrast': True,  # Light enhancement only
-            'denoise': False,  # Don't denoise - old texts need grain
-            'sharpen': False,  # Don't sharpen aged documents
-            'binarize': False, # Preserve contrast
-            'deskew': True,    # Still deskew
+            'enhance_contrast': False,  # CRITICAL: Disable all preprocessing for old texts
+            'denoise': False,
+            'sharpen': False,
+            'binarize': False,
+            'deskew': False,   # CRITICAL: Don't deskew - can corrupt delicate old script
             'tesseract_psm': 6,
-            'skip_correction': True  # CRITICAL: Disable text correction for old/unusual texts
+            'skip_correction': True
         },
         'minimal': {
             'enhance_contrast': False,
             'denoise': False,
             'sharpen': False,
             'binarize': False,
-            'deskew': False,   # No preprocessing - trust Tesseract
-            'tesseract_psm': 3  # Auto page segmentation
+            'deskew': False,   # No preprocessing - trust Tesseract completely
+            'tesseract_psm': 3,  # Auto page segmentation
+            'skip_correction': False  # Still apply correction for minimal mode
         }
     }
     
@@ -368,7 +369,11 @@ class HybridOCR:
         if self.preprocessor:
             psm = self.preprocessor.config.get('tesseract_psm', 6)
         
-        self.tesseract_config = tesseract_config or f'--oem 1 --psm {psm}'
+        # For manuscripts, try multiple OEM modes - OEM 0 = legacy, better for old scripts
+        if preprocess_preset == 'manuscript':
+            self.tesseract_config = tesseract_config or f'--oem 0 --psm {psm}'
+        else:
+            self.tesseract_config = tesseract_config or f'--oem 1 --psm {psm}'
         self.cache_dir = Path(cache_dir) if cache_dir else None
         
         # Initialize corrector

@@ -113,6 +113,21 @@ with st.sidebar:
     - **No Cost**: Free forever, no API charges
     - **Offline**: Works without internet
     - **Fast**: 3-5 seconds per page
+    - **Open Source**: MIT Licensed
+    """)
+    
+    st.markdown("---")
+    st.markdown("### 🆘 Troubleshooting")
+    st.markdown("""
+    **Output looks like gibberish?**
+    - Try the "minimal" preset
+    - Check image resolution (200+ DPI)
+    - Try uploading a cleaner/brighter image
+    
+    **Missing text?**
+    - Increase contrast in photo/image editor
+    - Use a higher quality scan
+    - Try "low_quality" preset if scan is poor
     """)
 
 col1, col2 = st.columns(2)
@@ -284,6 +299,29 @@ with st.expander("Sample Images & Tips"):
     """)
 
 st.markdown("---")
+
+st.markdown("---")
+
+with st.expander("⚠️ Known Limitations & Tips"):
+    st.markdown("""
+    **Medieval Manuscripts & Old Texts:**
+    - Old English/Middle English handwriting is very challenging for modern OCR
+    - Try the "minimal" preset (zero preprocessing) for best results
+    - If output is still poor, the manuscript font may be incompatible with modern Tesseract
+    - **Solution**: Try uploading a cleaner image or higher resolution scan
+    
+    **For Best Results:**
+    - **Clean documents**: Use "document" preset
+    - **Diagrams/flowcharts**: Use "diagram" preset  
+    - **Medieval texts**: Use "minimal" preset (or "manuscript" with no correction)
+    - **Photos with text**: Use "photo" preset
+    - **Poor quality scans**: Use "low_quality" preset
+    
+    **If output is still corrupted:**
+    - Try "minimal" preset (no preprocessing whatsoever)
+    - Check if image resolution is at least 200 DPI
+    - Medieval manuscripts may need specialized OCR software
+    """)
 
 with st.expander("🎉 What's New in This Version"):
     st.markdown("""
