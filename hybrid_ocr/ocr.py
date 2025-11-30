@@ -143,6 +143,15 @@ class ImagePreprocessor:
             'deskew': True,
             'tesseract_psm': 6
         },
+        'manuscript': {
+            'enhance_contrast': True,  # Light enhancement only
+            'denoise': False,  # Don't denoise - old texts need grain
+            'sharpen': False,  # Don't sharpen aged documents
+            'binarize': False, # Preserve contrast
+            'deskew': True,    # Still deskew
+            'tesseract_psm': 6,
+            'skip_correction': True  # CRITICAL: Disable text correction for old/unusual texts
+        },
         'minimal': {
             'enhance_contrast': False,
             'denoise': False,
@@ -438,11 +447,15 @@ class HybridOCR:
             # Reconstruct text preserving layout for diagrams
             raw_text = self._reconstruct_text_with_layout(words, self.preprocess_preset)
             
-            # Apply correction
-            corrected_text = self.corrector.correct(
-                raw_text,
-                [w.confidence for w in words]
-            )
+            # Apply correction (unless disabled for manuscript mode)
+            skip_correction = self.preprocessor and self.preprocessor.config.get('skip_correction', False)
+            if skip_correction:
+                corrected_text = raw_text
+            else:
+                corrected_text = self.corrector.correct(
+                    raw_text,
+                    [w.confidence for w in words]
+                )
             
             # Calculate statistics
             confidences = [w.confidence for w in words]

@@ -93,9 +93,9 @@ with st.sidebar:
     
     preset = st.selectbox(
         "Preprocessing Preset",
-        options=["default", "document", "diagram", "photo", "low_quality", "newspaper", "minimal"],
+        options=["default", "document", "diagram", "photo", "low_quality", "newspaper", "manuscript", "minimal"],
         index=0,
-        help="🎯 Choose preset: document (clean text), diagram (flowcharts/boxes), photo (text in photos), low_quality (poor scans), newspaper (old prints), minimal (no preprocessing)"
+        help="🎯 Choose preset: document (clean text), diagram (flowcharts/boxes), photo (text in photos), low_quality (poor scans), newspaper (old prints), manuscript (medieval/old texts - no correction), minimal (no preprocessing)"
     )
     
     confidence_threshold = st.slider(
