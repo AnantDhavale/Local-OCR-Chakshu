@@ -100,42 +100,56 @@ class ImagePreprocessor:
             'denoise': True,
             'sharpen': False,
             'binarize': False,
-            'deskew': True
+            'deskew': True,
+            'tesseract_psm': 6  # Single uniform block
         },
         'document': {
             'enhance_contrast': True,
             'denoise': False,  # Clean documents don't need denoising
-            'sharpen': True,   # Sharpen text edges
-            'binarize': True,  # Black & white for clean text
-            'deskew': True
+            'sharpen': False,  # FIXED: Don't sharpen - destroys text
+            'binarize': False, # FIXED: Don't binarize aggressively
+            'deskew': True,
+            'tesseract_psm': 6  # Better for structured text
+        },
+        'diagram': {
+            'enhance_contrast': True,
+            'denoise': False,
+            'sharpen': False,  # Don't sharpen diagrams
+            'binarize': False, # Keep colors for better contrast
+            'deskew': False,   # Don't deskew - diagrams are usually aligned
+            'tesseract_psm': 11  # Sparse text - good for boxes/labels
         },
         'photo': {
             'enhance_contrast': True,
             'denoise': True,   # Photos often have noise
             'sharpen': False,  # Don't sharpen photos
             'binarize': False, # Keep colors for better recognition
-            'deskew': True
+            'deskew': True,
+            'tesseract_psm': 3  # Auto page segmentation
         },
         'low_quality': {
             'enhance_contrast': True,
             'denoise': True,   # Remove noise from poor scans
-            'sharpen': True,   # Sharpen blurry text
-            'binarize': True,  # Binarize to remove artifacts
-            'deskew': True
+            'sharpen': False,  # FIXED: Sharpen can make garbage worse
+            'binarize': False, # FIXED: Aggressive binarization destroys text
+            'deskew': True,
+            'tesseract_psm': 6
         },
         'newspaper': {
             'enhance_contrast': True,
             'denoise': True,   # Old newspapers are noisy
             'sharpen': False,
-            'binarize': True,  # Convert to B&W for better text
-            'deskew': True
+            'binarize': False, # FIXED: Don't binarize - loses detail
+            'deskew': True,
+            'tesseract_psm': 6
         },
         'minimal': {
             'enhance_contrast': False,
             'denoise': False,
             'sharpen': False,
             'binarize': False,
-            'deskew': False  # No preprocessing - trust Tesseract
+            'deskew': False,   # No preprocessing - trust Tesseract
+            'tesseract_psm': 3  # Auto page segmentation
         }
     }
     
@@ -317,6 +331,7 @@ class HybridOCR:
             preprocess_preset: Preprocessing preset to use:
                 - 'default': Balanced for general use
                 - 'document': Optimized for clean documents
+                - 'diagram': For flowcharts and structured diagrams
                 - 'photo': Optimized for photos with text
                 - 'low_quality': For poor quality scans
                 - 'newspaper': For old newspapers
@@ -334,11 +349,18 @@ class HybridOCR:
         
         # Configuration
         self.language = language
-        self.tesseract_config = tesseract_config or '--oem 1 --psm 3'
-        self.cache_dir = Path(cache_dir) if cache_dir else None
+        self.preprocess_preset = preprocess_preset
         
         # Initialize components with preset support
         self.preprocessor = ImagePreprocessor(preset=preprocess_preset) if preprocess else None
+        
+        # Set Tesseract config based on preset
+        psm = 6  # Default to single uniform block
+        if self.preprocessor:
+            psm = self.preprocessor.config.get('tesseract_psm', 6)
+        
+        self.tesseract_config = tesseract_config or f'--oem 1 --psm {psm}'
+        self.cache_dir = Path(cache_dir) if cache_dir else None
         
         # Initialize corrector
         if isinstance(correction_strategy, str):
