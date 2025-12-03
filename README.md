@@ -1,8 +1,8 @@
 # Chakshu OCR
 Chakshu is a hybrid OCR that works absolutely locally with zero cost and no GPUs. My thinking is an OCR should be like a pdf viewer, as simple and as local. 
-# Hybrid OCR 🔍
+# Hybrid OCR 
 
-100% Local OCR with Intelligent Correction**
+100% Local OCR with Intelligent Correction.
 
 Combines Tesseract's battle-tested OCR with smart text correction - all running locally on your machine. No cloud services, no GPU required, no external API calls.
 
