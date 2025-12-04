@@ -1,19 +1,21 @@
 # Chakshu OCR
+
 Chakshu is a hybrid OCR that works absolutely locally with zero cost and no GPUs. My thinking is an OCR should be like a pdf viewer, as simple and as local. 
+Chakshu is a Marathi/ Sanskrit word meaning the "eye". 
+
 # Hybrid OCR 
 
 100% Local OCR with Intelligent Correction.
 
 Combines Tesseract's battle-tested OCR with smart text correction - all running locally on your machine. No cloud services, no GPU required, no external API calls.
 
-## Why Hybrid OCR?
+## Why use Chakshu OCR?
 
 Fully Local: Runs on CPU, no internet needed
 Smart Correction: Fixes common OCR errors automatically  
 No GPU Required: Works on any laptop or desktop
 Privacy First: Your documents never leave your machine
-Open Source: MIT licensed, fully transparent
-
+Open Source for educational purposes only, see license. 
 
 The code uses:
 
@@ -27,7 +29,6 @@ Image preprocessing (contrast, denoise, deskew)
 Confidence-based correction
 Context-aware text fixing
 Multi-strategy correction (rules/LLM/hybrid)
-Production-grade error handling
 Structured output formats
 
 
@@ -51,7 +52,7 @@ result = ocr.process("document.png")
 print(result['corrected_text'])
 \`\`\`
 
-## Installation
+## Installation (TBD)
 
 See [docs/installation.md](docs/installation.md) for detailed instructions.
 
@@ -77,4 +78,4 @@ See [CONTRIBUTING.md](docs/contributing.md)
 
 ## License
 
-MIT License - see LICENSE file
+Hybrid- see LICENSE file
